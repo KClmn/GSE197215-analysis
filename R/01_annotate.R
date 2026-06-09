@@ -22,6 +22,12 @@ cat("Loading Seurat object...\n")
 seu <- readRDS(file.path(DATA_PATH, "GSE197215.rds"))
 seu <- UpdateSeuratObject(seu)
 
+# Remove patient 113 (no clinical outcome documented)
+cat("\n--- Removing patient 113 (CD113A/B) due to missing outcome data ---\n")
+cells_to_keep <- !grepl("^CD113", seu$orig.ident)
+cat("Removing", sum(!cells_to_keep), "cells from patient 113\n")
+seu <- seu[, cells_to_keep]
+
 cat("\n--- Object summary ---\n")
 print(seu)
 
@@ -91,6 +97,9 @@ response_map <- c(
   "112" = "CR", "139" = "CR", "151" = "CR", "158" = "CR", "165" = "CR",
   "110" = "RL", "111" = "RL", "157" = "RL", "161" = "RL", "171" = "RL",
   "117" = "NR", "167" = "NR"
+  # NOTE: patient 113 (CD113A + CD113B, 1879 cells) is present in the object
+  # but was not in the original 12-patient list — response category unknown.
+  # Add "113" = "CR"/"RL"/"NR" here once confirmed, then re-run.
 )
 
 # CHOICE: A/B suffix interpretation.
@@ -107,11 +116,20 @@ cd4cd8_map <- c("A" = "CD4", "B" = "CD8")   # "" key illegal in c(); handled bel
 # ===========================================================================
 # 4. Add metadata columns
 # ===========================================================================
-seu$patient_id <- patient_num
-seu$response   <- response_map[patient_num]
-seu$sort_frac  <- ifelse(suffix %in% names(cd4cd8_map), cd4cd8_map[suffix], "unknown")
+# unname() is required for Seurat v5: $<- interprets names on the RHS as cell
+# barcodes and errors with "No cell overlap" if they don't match.
+seu$patient_id <- unname(patient_num)
+seu$response   <- unname(response_map[patient_num])
+seu$sort_frac  <- unname(ifelse(suffix %in% names(cd4cd8_map), cd4cd8_map[suffix], "unknown"))
 
-# Verify no NAs leaked in (would indicate an unmapped patient number).
+# Report any patients in the object that are missing from response_map before
+# the hard stop — makes it easier to identify the unmapped patient number.
+unmapped <- unique(seu$patient_id[is.na(seu$response)])
+if (length(unmapped) > 0)
+  stop("Patients in object but missing from response_map: ",
+       paste(unmapped, collapse = ", "),
+       "\nAdd them to response_map and re-run.")
+
 stopifnot(
   !any(is.na(seu$response)),
   !any(is.na(seu$patient_id))
