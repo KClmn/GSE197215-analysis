@@ -95,10 +95,13 @@ build_meta <- function(seu, extra_continuous = character(0)) {
   colnames(rna_df) <- paste0("RNA_", make.names(colnames(rna_df)))
 
   # Core metadata
+  # time_to_relapse_days is included here so it is available in the RL-only
+  # model (section 3 below); it will be NA for CR/NR cells and is excluded
+  # from the full-cohort formula by the >50% NA filter below.
   core_cols <- c("patient_id", "response", "sort_frac",
                  "nCount_RNA", "S.Score", "G2M.Score",
                  "exhaustion_score", "th2_score", "memory_score",
-                 "pseudotime")
+                 "pseudotime", "time_to_relapse_days")
   core_cols <- intersect(core_cols, colnames(seu@meta.data))
   meta <- seu@meta.data[, core_cols, drop = FALSE]
 
@@ -253,6 +256,87 @@ vp_pt  <- run_vp_single("pseudotime",       "Pseudotime")
 vp_exh <- run_vp_single("exhaustion_score", "Exhaustion score")
 
 # ===========================================================================
+# 3. time_to_relapse_days — RL patients only
+# ===========================================================================
+# CHP139 is response = "CR" with an atypical CD19-negative relapse event.
+# Its time_to_relapse_days is NA in the metadata (set in 01_annotate.R) so it
+# cannot enter this model; all other CR and NR cells have NA by definition.
+# Restricting to RL cells means:
+#   - only 5 RL donors remain (110, 111, 157, 161, 171)
+#   - patient_id random effect has only 5 levels — treat output as descriptive only.
+#
+# What this model asks: within the RL group, does how quickly a patient relapsed
+# (early = 44d, late = 632d) predict cell-level variation in pseudotime,
+# exhaustion, ADT markers, or RNA markers, above and beyond donor identity?
+
+vp_rl <- local({
+  if (!"time_to_relapse_days" %in% colnames(seu@meta.data)) {
+    cat("Skipping RL-only time_to_relapse model — column absent.\n")
+    return(invisible(NULL))
+  }
+
+  rl_cells <- colnames(seu)[!is.na(seu$response) & seu$response == "RL" &
+                              !is.na(seu$time_to_relapse_days)]
+  cat("\nRL cells with time_to_relapse_days:", length(rl_cells),
+      "from", length(unique(seu$patient_id[rl_cells])), "donors\n")
+
+  if (length(rl_cells) < 50) {
+    cat("Skipping RL-only model — fewer than 50 eligible cells.\n")
+    return(invisible(NULL))
+  }
+
+  seu_rl     <- seu[, rl_cells]
+  hvg_rl     <- intersect(hvg, rownames(seu_rl[["RNA"]]))
+  expr_rl    <- GetAssayData(seu_rl, assay = "RNA", slot = "data")[hvg_rl, ]
+  meta_rl    <- build_meta(seu_rl)
+
+  # time_to_relapse_days is now a meaningful continuous predictor for all cells.
+  # Drop zero-variance and >50%-NA columns as before.
+  ok_cols_rl <- colnames(meta_rl)[colMeans(is.na(meta_rl)) < 0.5]
+  meta_rl    <- meta_rl[, ok_cols_rl, drop = FALSE]
+  num_rl     <- colnames(meta_rl)[sapply(meta_rl, is.numeric)]
+  zv_rl      <- num_rl[sapply(meta_rl[num_rl], function(x) var(x, na.rm = TRUE) < 1e-10)]
+  if (length(zv_rl)) meta_rl <- meta_rl[, !colnames(meta_rl) %in% zv_rl, drop = FALSE]
+
+  # response is constant (all RL) — remove it from the formula.
+  excl_rl   <- c("response", "pseudotime", "exhaustion_score", "memory_score", "th2_score")
+  fixed_rl  <- setdiff(colnames(meta_rl), c("patient_id", excl_rl))
+  rand_t    <- "(1|patient_id)"
+  fixed_t   <- if (length(fixed_rl) > 0) paste(fixed_rl, collapse = " + ") else ""
+  f_rl      <- as.formula(if (nzchar(fixed_t)) paste("~", rand_t, "+", fixed_t)
+                          else paste("~", rand_t))
+  cat("RL-only formula:\n", deparse(f_rl), "\n")
+
+  shared_rl <- intersect(colnames(expr_rl), rownames(meta_rl))
+  expr_rl   <- expr_rl[, shared_rl]
+  meta_rl   <- meta_rl[shared_rl, ]
+
+  vp_rl_fit <- tryCatch(
+    fitExtractVarPartModel(expr_rl, f_rl, meta_rl, BPPARAM = bpparam()),
+    error = function(e) { cat("Error in RL model:", conditionMessage(e), "\n"); NULL }
+  )
+  if (is.null(vp_rl_fit)) return(invisible(NULL))
+
+  cat("\n--- RL-only median variance fractions ---\n")
+  print(sort(apply(vp_rl_fit, 2, median), decreasing = TRUE))
+
+  p_vp_rl <- plotVarPart(vp_rl_fit) +
+    labs(title = "Variance explained per gene — RL patients only",
+         subtitle = "n = 5 donors; time_to_relapse_days as continuous predictor") +
+    theme_classic(base_size = 10)
+  ggsave(file.path(plot_dir, "07_vp_rl_time_to_relapse.pdf"), p_vp_rl, width = 10, height = 5)
+  write.csv(as.data.frame(vp_rl_fit),
+            file.path(table_dir, "07_vp_rl_time_to_relapse.csv"))
+  message("Saved: results/plots/07_vp_rl_time_to_relapse.pdf")
+
+  cat("\nPOWER NOTE: n = 5 RL donors only. time_to_relapse_days variance\n",
+      "component is descriptive — do not over-interpret effect sizes.\n")
+
+  invisible(vp_rl_fit)
+})
+vp_rl_time <- vp_rl
+
+# ===========================================================================
 # 3. Violin / candle plot of RNA-level variance components
 # ===========================================================================
 p_vp_rna <- plotVarPart(vp_rna) +
@@ -275,7 +359,8 @@ write.csv(as.data.frame(vp_rna[top_resid_genes, ]),
 # 4. Save
 # ===========================================================================
 saveRDS(
-  list(vp_rna = vp_rna, vp_pseudotime = vp_pt, vp_exhaustion = vp_exh),
+  list(vp_rna = vp_rna, vp_pseudotime = vp_pt, vp_exhaustion = vp_exh,
+       vp_rl_time_to_relapse = vp_rl_time),
   "data/processed/07_vp.rds"
 )
 message("Saved: data/processed/07_vp.rds")

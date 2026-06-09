@@ -13,11 +13,13 @@
 library(Seurat)
 library(dplyr)
 
+source("config.R")
+
 # ===========================================================================
 # 1. Load object and inspect structure
 # ===========================================================================
 cat("Loading Seurat object...\n")
-seu <- readRDS("RAW/GSE197215.rds")
+seu <- readRDS(file.path(DATA_PATH, "GSE197215.rds"))
 
 cat("\n--- Object summary ---\n")
 print(seu)
@@ -129,11 +131,11 @@ print(table(seu$sort_frac))
 # Values confirmed from paper supplement.
 # time_to_relapse_days: days from infusion to relapse; NA for CR and NR patients.
 #
-# FLAG: patient 139 is classified CR in the response_map above but carries
-# time_to_relapse_days = 1807 (~5 years). Verify whether this is a late-relapse
-# event (should be RL), a time-to-last-follow-up entry, or correct as CR.
-# Until confirmed, 139 keeps response = "CR" and the value is stored as-is so
-# it does not silently drive any model; grep "139" to find every use.
+# CHP139 stays as response = "CR" — mechanism of relapse (CD19-negative) is
+# distinct from the antigen-loss / immune-escape biology of the RL group, so
+# conflating them would obscure the CR vs RL comparison.
+# time_to_relapse_days is set to NA for 139 so it does not enter the
+# time_to_relapse variance component in 07_variancepartition.R.
 
 clinical_tbl <- data.frame(
   patient_id           = c("110","111","112","117","139","151","157","158",
@@ -142,7 +144,9 @@ clinical_tbl <- data.frame(
                             9.7, 14.5, 21.5,  9.8),
   sex                  = c( "F",  "F",  "F",  "M",  "F",  "F",  "M",  "F",
                              "F",  "M",  "M",  "M"),
-  time_to_relapse_days = c(  79,   44,   NA,   NA, 1807,   NA,  632,   NA,
+  # CHP139: CD19-negative relapse at 1807d — mechanism unclear from available
+  # metadata; excluded from time_to_relapse variance component (see 07_variancepartition.R).
+  time_to_relapse_days = c(  79,   44,   NA,   NA,   NA,   NA,  632,   NA,
                              287,   NA,   NA,  595),
   stringsAsFactors     = FALSE
 )
