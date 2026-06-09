@@ -8,5 +8,5 @@ if (Sys.info()["sysname"] == "Darwin") {
   DATA_PATH <- "~/scratch/GSE197215-analysis/RAW/"
 } else {
   # OSCAR (Linux)
-  DATA_PATH <- "/gpfs/scratch/kclin/GSE197215/RAW/"
+  DATA_PATH <- "/users/kclin/GSE197215-analysis/RAW/"
 }
