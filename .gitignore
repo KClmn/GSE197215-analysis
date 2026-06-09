@@ -1,0 +1,13 @@
+*.Rda
+*.RData
+*.rds
+*.csv
+*.png
+*.pdf
+.Rhistory
+.RData
+.Ruserdata
+__pycache__/
+*.pyc
+.DS_Store
+*.o
