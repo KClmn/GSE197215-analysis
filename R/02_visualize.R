@@ -115,17 +115,18 @@ message("Saved: results/plots/02_dimplot_response.pdf")
 
 DefaultAssay(seu) <- adt_assay
 
-# Group features by biology to guide panel layout.
-# Adjust feature names to match the exact rownames printed above.
+# ADT feature names confirmed from 01_annotate.R output.
+# "ADT-" (empty name) is a ghost barcode — excluded from all plots.
 exhaustion_markers <- intersect(
-  c("PD-1", "PD1", "PDCD1", "LAG-3", "LAG3", "CTLA-4", "CTLA4", "TIGIT"),
+  c("ADT-PD-1", "ADT-LAG-3", "ADT-TIGIT", "ADT-CTLA-4", "ADT-2B4"),
   adt_features
 )
 memory_markers <- intersect(
-  c("CCR7", "CD45RO", "CD45RA", "CD62L"),
+  c("ADT-CCR7", "ADT-CD45RO", "ADT-CD45RA", "ADT-CD62L", "ADT-CD27"),
   adt_features
 )
-other_markers <- setdiff(adt_features, c(exhaustion_markers, memory_markers))
+# Exclude the empty ghost barcode from all panels
+other_markers <- setdiff(adt_features, c(exhaustion_markers, memory_markers, "ADT-"))
 
 cat("\nExhaustion ADT features found: ", paste(exhaustion_markers, collapse = ", "), "\n")
 cat("Memory ADT features found: ",      paste(memory_markers,     collapse = ", "), "\n")
@@ -174,6 +175,7 @@ message("Saved: results/plots/02_featureplot_adt.pdf")
 # VlnPlots split by response give a per-marker statistical overview that
 # complements the spatial UMAP view.
 
+# "ADT-" ghost barcode already excluded from exhaustion/memory/other lists above.
 DefaultAssay(seu) <- adt_assay
 
 if (length(exhaustion_markers) > 0) {

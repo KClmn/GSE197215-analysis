@@ -204,6 +204,7 @@ if ("ADT_renorm" %in% names(seu@assays)) {
 # ===========================================================================
 # 8. Save
 # ===========================================================================
+dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
 out_path <- "data/processed/01_annotated.rds"
 saveRDS(seu, out_path)
 message("Saved: ", out_path)
