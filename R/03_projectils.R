@@ -47,7 +47,10 @@ DefaultAssay(seu) <- "RNA"
 # Subsequent calls use the local cache (~300 MB, stored in the R temp or home dir).
 
 cat("Fetching TIL reference atlas...\n")
-ref_cd8 <- ProjecTILs::load.reference.map()   # default = human CD8 TIL atlas
+# CHOICE: explicitly request the human CD8 TIL atlas.
+# The no-argument default downloads the mouse atlas, which removes all human
+# cells at the scGate pre-filter step (level 1 filter trained on mouse markers).
+ref_cd8 <- ProjecTILs::load.reference.map(ref = "human.CD8")
 
 cat("\n--- Reference cell type composition ---\n")
 print(table(ref_cd8$functional.cluster))
@@ -142,6 +145,14 @@ message("Saved: results/plots/03_projectils_umap.pdf")
 # ===========================================================================
 # 5. Composition barplot per patient
 # ===========================================================================
+n_classified <- sum(!is.na(seu_proj$functional.cluster))
+if (n_classified == 0) {
+  warning("No cells were classified by ProjecTILs — skipping composition plot.\n",
+          "Check that the correct reference was loaded (human vs mouse).")
+  saveRDS(seu_proj, "data/processed/03_projectils.rds")
+  message("Saved: data/processed/03_projectils.rds")
+  stop("Stopping early: 0 cells classified. See warning above.", call. = FALSE)
+}
 # Stacked barplots show whether CR/RL/NR patients differ in TIL subtype mix.
 # CHOICE: normalise to proportions (not raw counts) so unequal cell numbers
 # per patient do not confound the comparison.

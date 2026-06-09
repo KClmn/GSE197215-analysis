@@ -108,7 +108,7 @@ p_split <- DimPlot(
 
 layout_overview <- (p_response | p_patient | p_sort) / p_split +
   plot_annotation(
-    title   = "Bai et al. 2022 — CD19-3T3 stimulation condition",
+    title   = "Bai et al. 2022 - CD19-3T3 stimulation condition",
     caption = "GSE197215"
   )
 
@@ -170,7 +170,7 @@ all_plots <- make_feature_plots(adt_features, adt_assay)
 n_cols    <- min(4L, length(all_plots))
 p_adt     <- wrap_plots(all_plots, ncol = n_cols) +
   plot_annotation(
-    title   = paste("ADT markers —", adt_assay, "assay"),
+    title   = paste("ADT markers -", adt_assay, "assay"),
     caption = "GSE197215 | Bai et al. 2022"
   )
 
