@@ -101,14 +101,14 @@ response_map <- c(
 # update CD4CD8_map below and re-run.
 # The variable is named "cd4cd8" to make the assumption explicit — grep for it
 # to find every downstream place that depends on this interpretation.
-cd4cd8_map <- c("A" = "CD4", "B" = "CD8", "" = "unknown")
+cd4cd8_map <- c("A" = "CD4", "B" = "CD8")   # "" key illegal in c(); handled below
 
 # ===========================================================================
 # 4. Add metadata columns
 # ===========================================================================
 seu$patient_id <- patient_num
 seu$response   <- response_map[patient_num]
-seu$sort_frac  <- cd4cd8_map[suffix]
+seu$sort_frac  <- ifelse(suffix %in% names(cd4cd8_map), cd4cd8_map[suffix], "unknown")
 
 # Verify no NAs leaked in (would indicate an unmapped patient number).
 stopifnot(

@@ -8,11 +8,12 @@
 # Those unexplained factors are the primary leads.
 #
 # MOFA2 requires:
-#   R: BiocManager::install("MOFA2")
-#   Python: pip install mofapy2   (or reticulate::py_install("mofapy2"))
+#   R: BiocManager::install(c("MOFA2", "basilisk"))
+#   Python: handled automatically — use_basilisk = TRUE in run_mofa() creates
+#           an isolated conda environment and installs mofapy2 on first run.
+#           No manual pip install needed (works out of the box in RStudio).
 #
-# If mofapy2 is unavailable, the script falls back to a multi-modal PCA
-# using the integrated assay, which is less principled but still informative.
+# If MOFA2 itself is not installed, the script falls back to multi-modal PCA.
 #
 # Input:  data/processed/05_trajectory.rds   (or 04_scored.rds if 05 not run)
 # Output: data/processed/06_mofa_model.hdf5
@@ -91,11 +92,9 @@ mofa_views <- list(RNA = rna_mat, ADT = adt_mat)
 # ===========================================================================
 # 2. Run MOFA2 (or fall back to PCA)
 # ===========================================================================
-mofa_available <- requireNamespace("MOFA2", quietly = TRUE) &&
-                  tryCatch({
-                    MOFA2:::.check_mofa_options()  # will fail if mofapy2 missing
-                    TRUE
-                  }, error = function(e) FALSE)
+# use_basilisk = TRUE means MOFA2 manages its own Python env — no need to
+# pre-check for mofapy2; the only hard requirement is the R package itself.
+mofa_available <- requireNamespace("MOFA2", quietly = TRUE)
 
 if (mofa_available) {
   library(MOFA2)
@@ -126,7 +125,7 @@ if (mofa_available) {
 
   hdf5_path <- "data/processed/06_mofa_model.hdf5"
   time_mofa <- system.time({
-    mofa_obj <- run_mofa(mofa_obj, outfile = hdf5_path, use_basilisk = FALSE)
+    mofa_obj <- run_mofa(mofa_obj, outfile = hdf5_path, use_basilisk = TRUE)
   })
   cat("MOFA2 run time:\n"); print(time_mofa)
 
@@ -260,8 +259,8 @@ if (mofa_available) {
   # ---------------------------------------------------------------------------
   # Fallback: PCA on combined RNA + ADT using the integrated assay
   # ---------------------------------------------------------------------------
-  warning("MOFA2 or mofapy2 not available. Running multi-modal PCA fallback.\n",
-          "Install: pip install mofapy2  (then re-run for full MOFA2 analysis)")
+  warning("MOFA2 not installed. Running multi-modal PCA fallback.\n",
+          "Install: BiocManager::install(c('MOFA2', 'basilisk'))  then re-run.")
   library(stats)
 
   cat("\nRunning multi-modal PCA fallback...\n")

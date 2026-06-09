@@ -40,6 +40,7 @@ bioc_pkgs <- c(
   "slingshot",             # trajectory inference (05_trajectory.R)
   "tradeSeq",              # test gene–pseudotime association post-slingshot
   "MOFA2",                 # multi-omics factor analysis (06_mofa.R)
+  "basilisk",              # isolated Python env; installs mofapy2 automatically for MOFA2
   "variancePartition",     # variance decomposition (07_variancepartition.R)
   "BiocParallel"           # parallel back-end for variancePartition
 )
@@ -47,14 +48,15 @@ bioc_pkgs <- c(
 # ---------------------------------------------------------------------------
 # GitHub-only packages
 # ---------------------------------------------------------------------------
-# ProjecTILs: TIL reference atlas classifier (03_projectils.R)
-# Install once with: remotes::install_github("carmonalab/ProjecTILs")
-# UCell: gene-set scoring engine required by ProjecTILs
-# Install once with: BiocManager::install("UCell")
+# ProjecTILs (03_projectils.R) has a chain of carmonalab dependencies.
+# Install in this order — each one must succeed before the next:
+#
+#   BiocManager::install("UCell")                       # Bioconductor
+#   remotes::install_github("carmonalab/STACAS")        # required by ProjecTILs
+#   remotes::install_github("carmonalab/ProjecTILs")
 #
 # We do NOT auto-install GitHub packages here — a missing package gives an
 # informative error from library() without hiding an opaque install step.
-# Run the remotes::install_github() lines manually if ProjecTILs is absent.
 
 # ---------------------------------------------------------------------------
 # Install missing CRAN packages
@@ -75,12 +77,10 @@ if (length(missing_bioc)) {
 }
 
 # ---------------------------------------------------------------------------
-# MOFA2 requires the Python mofapy2 back-end.
-# Install once in the active Python/conda environment with:
-#   pip install mofapy2
-# or via reticulate:
-#   reticulate::py_install("mofapy2", pip = TRUE)
-# If MOFA2 cannot find mofapy2 at runtime, 06_mofa.R will fall back to PCA.
+# MOFA2 Python back-end — handled automatically via basilisk.
+# basilisk (already in bioc_pkgs above) creates an isolated conda environment
+# and installs mofapy2 inside it on first use; no manual pip call needed.
+# In 06_mofa.R we pass use_basilisk = TRUE to run_mofa() — that is all.
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
