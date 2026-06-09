@@ -17,6 +17,19 @@ library(viridis)
 # ---------------------------------------------------------------------------
 seu <- readRDS("data/processed/01_annotated.rds")
 
+# Run clustering on the integrated PCA if not already present.
+# CHOICE: resolution 0.5 is a moderate starting point for ~28k cells; gives
+# roughly 10-20 clusters. Adjust and re-run 02 if clusters look over/under-split.
+if (!"seurat_clusters" %in% colnames(seu@meta.data)) {
+  cat("seurat_clusters not found — running FindNeighbors + FindClusters on integrated PCA\n")
+  DefaultAssay(seu) <- "integrated"
+  seu <- FindNeighbors(seu, reduction = "pca", dims = 1:30)
+  seu <- FindClusters(seu, resolution = 0.5)
+  # Save clusters back so downstream scripts don't repeat this step.
+  saveRDS(seu, "data/processed/01_annotated.rds")
+  cat("Clusters added and saved back to 01_annotated.rds\n")
+}
+
 # Confirm the UMAP exists; stop with a helpful message if missing.
 if (!"umap" %in% tolower(Reductions(seu)))
   stop("No UMAP reduction found. Reductions present: ",
