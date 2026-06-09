@@ -50,7 +50,9 @@ cat("Fetching TIL reference atlas...\n")
 # CHOICE: explicitly request the human CD8 TIL atlas.
 # The no-argument default downloads the mouse atlas, which removes all human
 # cells at the scGate pre-filter step (level 1 filter trained on mouse markers).
-ref_cd8 <- ProjecTILs::load.reference.map(ref = "human.CD8")
+ref_cd8 <- ProjecTILs::load.reference.map(
+  ref = "https://ndownloader.figshare.com/files/41414556"  # CD8T_human_ref_v1.rds
+)
 
 cat("\n--- Reference cell type composition ---\n")
 print(table(ref_cd8$functional.cluster))
