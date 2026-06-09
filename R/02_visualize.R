@@ -25,7 +25,7 @@ if (!"umap" %in% tolower(Reductions(seu)))
 
 # Use the ADT_renorm assay for protein visualisation if present; fall back to ADT.
 # ADT_renorm is the DSB- or CLR-normalised version and has better visual contrast.
-adt_assay <- if ("ADT_renorm" %in% Assays(seu)) "ADT_renorm" else "ADT"
+adt_assay <- if ("ADT_renorm" %in% names(seu@assays)) "ADT_renorm" else "ADT"
 cat("Using assay '", adt_assay, "' for ADT FeaturePlots\n", sep = "")
 
 adt_features <- rownames(seu[[adt_assay]])

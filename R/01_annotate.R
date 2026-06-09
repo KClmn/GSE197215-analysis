@@ -32,7 +32,7 @@ cat("\n--- Object summary ---\n")
 print(seu)
 
 cat("\n--- Assays present ---\n")
-print(Assays(seu))
+print(names(seu@assays))
 
 cat("\n--- Reductions present ---\n")
 print(Reductions(seu))
@@ -187,16 +187,16 @@ seu$response <- factor(seu$response, levels = c("CR", "RL", "NR"))
 # 7. Inspect ADT feature names
 # ===========================================================================
 # Record ADT feature names here so downstream scripts can reference them safely.
-if ("ADT" %in% Assays(seu)) {
+if ("ADT" %in% names(seu@assays)) {
   adt_features <- rownames(seu[["ADT"]])
   cat("\n--- ADT features (", length(adt_features), "markers) ---\n")
   print(adt_features)
 } else {
-  warning("No 'ADT' assay found — check Assays(seu)")
+  warning("No 'ADT' assay found — check names(seu@assays)")
 }
 
 # Also check ADT_renorm if present (normalised version used for visualisation).
-if ("ADT_renorm" %in% Assays(seu)) {
+if ("ADT_renorm" %in% names(seu@assays)) {
   cat("\n--- ADT_renorm features ---\n")
   print(rownames(seu[["ADT_renorm"]]))
 }

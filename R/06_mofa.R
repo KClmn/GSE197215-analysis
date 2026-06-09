@@ -77,7 +77,7 @@ cat("RNA view dimensions:", nrow(rna_mat), "×", ncol(rna_mat), "\n")
 # ADT view: use ADT_renorm if available (CLR/DSB normalised), else ADT.
 # CHOICE: Gaussian likelihood on CLR-normalised ADT values is standard for
 # MOFA2 CITE-seq analyses (Argelaguet et al. 2020 Genome Biology).
-adt_assay_name <- if ("ADT_renorm" %in% Assays(seu)) "ADT_renorm" else "ADT"
+adt_assay_name <- if ("ADT_renorm" %in% names(seu@assays)) "ADT_renorm" else "ADT"
 adt_mat <- GetAssayData(seu, assay = adt_assay_name, slot = "data")
 cat("ADT view dimensions:", nrow(adt_mat), "×", ncol(adt_mat), "\n")
 

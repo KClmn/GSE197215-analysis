@@ -80,7 +80,7 @@ cat("Using", n_workers, "parallel workers\n")
 #   + key RNA markers    as continuous covariates (normalised expression)
 
 build_meta <- function(seu, extra_continuous = character(0)) {
-  adt_assay_name <- if ("ADT_renorm" %in% Assays(seu)) "ADT_renorm" else "ADT"
+  adt_assay_name <- if ("ADT_renorm" %in% names(seu@assays)) "ADT_renorm" else "ADT"
   adt_df         <- as.data.frame(t(as.matrix(
     GetAssayData(seu, assay = adt_assay_name, slot = "data")
   )))
