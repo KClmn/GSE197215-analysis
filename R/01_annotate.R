@@ -20,6 +20,7 @@ source("config.R")
 # ===========================================================================
 cat("Loading Seurat object...\n")
 seu <- readRDS(file.path(DATA_PATH, "GSE197215.rds"))
+seu <- UpdateSeuratObject(seu)
 
 cat("\n--- Object summary ---\n")
 print(seu)
