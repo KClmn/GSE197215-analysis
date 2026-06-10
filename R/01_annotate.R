@@ -44,7 +44,32 @@ cat("\n--- First rows of metadata ---\n")
 print(head(seu@meta.data))
 
 # ===========================================================================
-# 2. Investigate orig.ident to decode the A/B suffix
+# 2. Strip "h-" prefix from RNA gene names
+# ===========================================================================
+# The CD19-3T3 stimulation used mouse 3T3 feeder cells. Sequencing was aligned
+# against a combined human+mouse reference genome, and "h-" marks human genes
+# (vs. "m-" for mouse). Downstream tools (ProjecTILs ortholog tables, module
+# score gene lists, variancePartition) all expect bare HGNC symbols.
+
+rna_genes <- rownames(seu[["RNA"]])
+if (any(grepl("^h-", rna_genes))) {
+  cat("Stripping 'h-' prefix from", sum(grepl("^h-", rna_genes)), "RNA genes\n")
+
+  rna_counts <- GetAssayData(seu, assay = "RNA", layer = "counts")
+  rna_data   <- GetAssayData(seu, assay = "RNA", layer = "data")
+  rownames(rna_counts) <- sub("^h-", "", rownames(rna_counts))
+  rownames(rna_data)   <- sub("^h-", "", rownames(rna_data))
+
+  seu[["RNA"]] <- CreateAssayObject(counts = rna_counts, data = rna_data)
+  cat("Example gene names after stripping:",
+      paste(head(rownames(seu[["RNA"]]), 5), collapse = ", "), "\n")
+  rm(rna_counts, rna_data)
+} else {
+  cat("No 'h-' prefix found — gene names already clean\n")
+}
+
+# ===========================================================================
+# 3. Investigate orig.ident to decode the A/B suffix
 # ===========================================================================
 # CHOICE: we inspect BEFORE assigning meaning, because the suffix could be
 # CD4/CD8 sort, a replicate well, a sequencing lane, or a stimulation batch.
@@ -85,7 +110,7 @@ cat("\n--- A/B split per patient (A, B = separate library entries?) ---\n")
 print(ab_check)
 
 # ===========================================================================
-# 3. Define response mapping
+# 4. Define response mapping
 # ===========================================================================
 # From Bai et al. 2022 Table S1 / main text.
 # patient_number → response category
