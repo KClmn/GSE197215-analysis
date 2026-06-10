@@ -87,7 +87,7 @@ rna_mat <- rna_mat[, shared_cells]
 adt_mat <- adt_mat[, shared_cells]
 cat("Shared cells:", length(shared_cells), "\n")
 
-mofa_views <- list(RNA = rna_mat, ADT = adt_mat)
+mofa_views <- list(RNA = as.matrix(rna_mat), ADT = as.matrix(adt_mat))
 
 # ===========================================================================
 # 2. Run MOFA2 (or fall back to PCA)
