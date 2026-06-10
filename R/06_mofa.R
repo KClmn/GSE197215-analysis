@@ -65,11 +65,11 @@ cat("HVGs selected:", length(hvg), "\n")
 # CHOICE: use scaled data (zero-centred, unit variance) so MOFA2 factors are
 # not dominated by the highest-expressing genes.  MOFA2's Gaussian likelihood
 # is appropriate for scaled continuous data.
-rna_mat <- GetAssayData(seu, assay = "RNA", slot = "scale.data")
+rna_mat <- GetAssayData(seu, assay = "RNA", layer = "scale.data")
 if (nrow(rna_mat) == 0) {
   cat("scale.data slot empty — scaling now...\n")
   seu     <- ScaleData(seu, features = hvg)
-  rna_mat <- GetAssayData(seu, assay = "RNA", slot = "scale.data")
+  rna_mat <- GetAssayData(seu, assay = "RNA", layer = "scale.data")
 }
 rna_mat <- rna_mat[intersect(hvg, rownames(rna_mat)), ]
 cat("RNA view dimensions:", nrow(rna_mat), "×", ncol(rna_mat), "\n")
@@ -78,7 +78,7 @@ cat("RNA view dimensions:", nrow(rna_mat), "×", ncol(rna_mat), "\n")
 # CHOICE: Gaussian likelihood on CLR-normalised ADT values is standard for
 # MOFA2 CITE-seq analyses (Argelaguet et al. 2020 Genome Biology).
 adt_assay_name <- if ("ADT_renorm" %in% names(seu@assays)) "ADT_renorm" else "ADT"
-adt_mat <- GetAssayData(seu, assay = adt_assay_name, slot = "data")
+adt_mat <- GetAssayData(seu, assay = adt_assay_name, layer = "data")
 cat("ADT view dimensions:", nrow(adt_mat), "×", ncol(adt_mat), "\n")
 
 # Guard: cell names must align between views.

@@ -59,11 +59,11 @@ cat("Exhaustion marker genes found:", paste(present_exh, collapse = ", "), "\n")
 cluster_ids <- levels(Idents(seu))
 mean_stem <- sapply(cluster_ids, function(cl) {
   cells <- WhichCells(seu, idents = cl)
-  mean(colMeans(GetAssayData(seu, slot = "data")[present_stem, cells, drop = FALSE]))
+  mean(colMeans(GetAssayData(seu, layer = "data")[present_stem, cells, drop = FALSE]))
 })
 mean_exh <- sapply(cluster_ids, function(cl) {
   cells <- WhichCells(seu, idents = cl)
-  mean(colMeans(GetAssayData(seu, slot = "data")[present_exh, cells, drop = FALSE]))
+  mean(colMeans(GetAssayData(seu, layer = "data")[present_exh, cells, drop = FALSE]))
 })
 
 # Stem score = high stem, low exhaustion.
@@ -192,7 +192,7 @@ cells_with_pt <- !is.na(seu$pseudotime)
 pt_vals        <- seu$pseudotime[cells_with_pt]
 pt_cuts        <- cut(pt_vals, breaks = n_bins, labels = FALSE)
 
-expr_data <- GetAssayData(seu, slot = "data")[
+expr_data <- GetAssayData(seu, layer = "data")[
   intersect(unlist(validation_genes), rownames(seu[["RNA"]])),
   cells_with_pt,
   drop = FALSE

@@ -72,7 +72,7 @@ time_proj <- system.time({
   # species, then fails to find human gene symbols in the Gene.MM (mouse)
   # column. Setting both to "Homo sapiens" bypasses the conversion entirely.
   # Diagnostic: confirm ProjecTILs can see the RNA data before the 8-min run.
-  rna_mat <- GetAssayData(seu, assay = "RNA", slot = "data")
+  rna_mat <- GetAssayData(seu, assay = "RNA", layer = "data")
   cat("RNA data slot —", nrow(rna_mat), "genes x", ncol(rna_mat), "cells\n")
   cat("Gene name examples:", paste(head(rownames(rna_mat), 6), collapse = ", "), "\n")
   cat("Non-zero entries:", sum(rna_mat != 0), "\n")

@@ -82,7 +82,7 @@ cat("Using", n_workers, "parallel workers\n")
 build_meta <- function(seu, extra_continuous = character(0)) {
   adt_assay_name <- if ("ADT_renorm" %in% names(seu@assays)) "ADT_renorm" else "ADT"
   adt_df         <- as.data.frame(t(as.matrix(
-    GetAssayData(seu, assay = adt_assay_name, slot = "data")
+    GetAssayData(seu, assay = adt_assay_name, layer = "data")
   )))
   colnames(adt_df) <- paste0("ADT_", make.names(colnames(adt_df)))
 
@@ -90,7 +90,7 @@ build_meta <- function(seu, extra_continuous = character(0)) {
                      "LAG3", "HAVCR2", "CCR7", "IL7R")
   key_rna_genes <- intersect(key_rna_genes, rownames(seu[["RNA"]]))
   rna_df <- as.data.frame(t(as.matrix(
-    GetAssayData(seu, assay = "RNA", slot = "data")[key_rna_genes, , drop = FALSE]
+    GetAssayData(seu, assay = "RNA", layer = "data")[key_rna_genes, , drop = FALSE]
   )))
   colnames(rna_df) <- paste0("RNA_", make.names(colnames(rna_df)))
 
@@ -128,7 +128,7 @@ if (length(hvg) == 0) {
 hvg <- hvg[seq_len(min(1000L, length(hvg)))]   # cap at 1000 for speed
 cat("Running variancePartition on", length(hvg), "HVGs...\n")
 
-expr_mat <- GetAssayData(seu, assay = "RNA", slot = "data")[hvg, ]
+expr_mat <- GetAssayData(seu, assay = "RNA", layer = "data")[hvg, ]
 
 meta_full <- build_meta(seu)
 
@@ -287,7 +287,7 @@ vp_rl <- local({
 
   seu_rl     <- seu[, rl_cells]
   hvg_rl     <- intersect(hvg, rownames(seu_rl[["RNA"]]))
-  expr_rl    <- GetAssayData(seu_rl, assay = "RNA", slot = "data")[hvg_rl, ]
+  expr_rl    <- GetAssayData(seu_rl, assay = "RNA", layer = "data")[hvg_rl, ]
   meta_rl    <- build_meta(seu_rl)
 
   # time_to_relapse_days is now a meaningful continuous predictor for all cells.
