@@ -150,12 +150,13 @@ meta_full[numeric_cols] <- lapply(meta_full[numeric_cols], function(x) {
 })
 
 # Build the formula dynamically from whatever columns are present.
-# Random effects: patient_id
-# Fixed effects: everything else
-rand_effects  <- c("patient_id")
-fixed_effects <- setdiff(colnames(meta_full),
-                         c(rand_effects, "pseudotime", "exhaustion_score",
-                           "memory_score", "th2_score"))
+# variancePartition requires ALL categorical variables to be random effects.
+# Continuous variables are fixed effects.
+excluded_from_formula <- c("pseudotime", "exhaustion_score", "memory_score", "th2_score")
+
+cat_cols  <- colnames(meta_full)[sapply(meta_full, function(x) is.factor(x) | is.character(x))]
+rand_effects <- unique(c("patient_id", cat_cols))
+fixed_effects <- setdiff(colnames(meta_full), c(rand_effects, excluded_from_formula))
 
 rand_terms  <- paste(sprintf("(1|%s)", rand_effects), collapse = " + ")
 fixed_terms <- if (length(fixed_effects) > 0) paste(fixed_effects, collapse = " + ") else ""
