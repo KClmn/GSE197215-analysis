@@ -67,11 +67,16 @@ print(table(ref_cd8$functional.cluster))
 
 cat("\nRunning ProjecTILs classifier...\n")
 time_proj <- system.time({
+    # filter.cells = FALSE: scGate's level-1 gate is tuned for ex vivo TILs and
+  # removes all in vitro-expanded CAR-T cells (different activation state +
+  # CAR transgene expression). Projection still works without the gate.
+  # Downstream: treat CD4 cell labels as "nearest CD8 neighbor" and weight
+  # interpretation toward sort_frac == "CD8" cells.
   seu_proj <- ProjecTILs.classifier(
     query     = seu,
     ref       = ref_cd8,
-    filter.cells = TRUE,   # remove cells that project poorly (low confidence)
-    ncores    = 1L         # increase if running on a multi-core machine
+    filter.cells = FALSE,
+    ncores    = 1L
   )
 })
 cat("ProjecTILs run time:\n"); print(time_proj)
@@ -173,8 +178,9 @@ p_comp <- ggplot(comp_df, aes(x = patient_id, y = proportion, fill = TIL_type)) 
   scale_fill_manual(values = til_cols, na.value = "grey70") +
   facet_grid(~ response, scales = "free_x", space = "free_x") +
   labs(
-    title = "TIL subtype composition per patient",
-    x     = NULL, y = "Proportion"
+    title    = "TIL subtype composition per patient (CD8 reference, filter.cells=FALSE)",
+    subtitle = "CD4 cells assigned to nearest CD8 state — interpret sort_frac==CD8 subset only",
+    x        = NULL, y = "Proportion"
   ) +
   theme_classic(base_size = 11) +
   theme(
