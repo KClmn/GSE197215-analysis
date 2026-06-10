@@ -140,6 +140,15 @@ if (length(zero_var_cols) > 0) {
   meta_full <- meta_full[, !colnames(meta_full) %in% zero_var_cols, drop = FALSE]
 }
 
+# Scale all continuous predictors to mean=0, sd=1 so lmer is numerically
+# stable across the large range difference between nCount_RNA (~10k) and
+# cell cycle scores (~0). Categorical columns are left as-is.
+numeric_cols <- colnames(meta_full)[sapply(meta_full, is.numeric)]
+meta_full[numeric_cols] <- lapply(meta_full[numeric_cols], function(x) {
+  s <- sd(x, na.rm = TRUE)
+  if (is.na(s) || s < 1e-10) x else as.numeric(scale(x))
+})
+
 # Build the formula dynamically from whatever columns are present.
 # Random effects: patient_id
 # Fixed effects: everything else
