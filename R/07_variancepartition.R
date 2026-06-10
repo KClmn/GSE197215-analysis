@@ -192,11 +192,16 @@ write.csv(as.data.frame(vp_rna), file.path(table_dir, "07_vp_rna_full.csv"))
 # 2. Variance decomposition of pseudotime score (single response)
 # ===========================================================================
 run_vp_single <- function(response_col, label) {
-  if (!response_col %in% colnames(meta_full)) {
+  # Pull directly from seu@meta.data so pseudotime isn't lost by the 50% NA filter
+  # that was applied when building meta_full.
+  y_src <- if (response_col %in% colnames(seu@meta.data)) seu@meta.data[[response_col]]
+           else if (response_col %in% colnames(meta_full))  meta_full[[response_col]]
+           else NULL
+  if (is.null(y_src)) {
     cat("Skipping", label, "— column not found in metadata.\n")
     return(invisible(NULL))
   }
-  y    <- meta_full[[response_col]]
+  y    <- setNames(as.numeric(y_src), rownames(seu@meta.data))
   ok   <- !is.na(y)
   if (sum(ok) < 20) {
     cat("Skipping", label, "— fewer than 20 non-NA values.\n")
@@ -308,10 +313,19 @@ vp_rl <- local({
   zv_rl      <- num_rl[sapply(meta_rl[num_rl], function(x) var(x, na.rm = TRUE) < 1e-10)]
   if (length(zv_rl)) meta_rl <- meta_rl[, !colnames(meta_rl) %in% zv_rl, drop = FALSE]
 
+  # Scale continuous predictors (same reason as full model).
+  num_rl2 <- colnames(meta_rl)[sapply(meta_rl, is.numeric)]
+  meta_rl[num_rl2] <- lapply(meta_rl[num_rl2], function(x) {
+    s <- sd(x, na.rm = TRUE); if (is.na(s) || s < 1e-10) x else as.numeric(scale(x))
+  })
+
   # response is constant (all RL) — remove it from the formula.
+  # All categoricals must be random effects in variancePartition.
   excl_rl   <- c("response", "pseudotime", "exhaustion_score", "memory_score", "th2_score")
-  fixed_rl  <- setdiff(colnames(meta_rl), c("patient_id", excl_rl))
-  rand_t    <- "(1|patient_id)"
+  cat_rl    <- colnames(meta_rl)[sapply(meta_rl, function(x) is.factor(x) | is.character(x))]
+  rand_rl   <- unique(c("patient_id", cat_rl))
+  fixed_rl  <- setdiff(colnames(meta_rl), c(rand_rl, excl_rl))
+  rand_t    <- paste(sprintf("(1|%s)", rand_rl), collapse = " + ")
   fixed_t   <- if (length(fixed_rl) > 0) paste(fixed_rl, collapse = " + ") else ""
   f_rl      <- as.formula(if (nzchar(fixed_t)) paste("~", rand_t, "+", fixed_t)
                           else paste("~", rand_t))
