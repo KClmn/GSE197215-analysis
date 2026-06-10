@@ -55,6 +55,14 @@ present_exh  <- intersect(exh_markers,  rownames(seu[["RNA"]]))
 cat("Stem marker genes found:", paste(present_stem, collapse = ", "), "\n")
 cat("Exhaustion marker genes found:", paste(present_exh, collapse = ", "), "\n")
 
+# Ensure Idents are seurat_clusters, not orig.ident.
+# Idents can revert to orig.ident across save/load cycles if not explicitly set.
+if ("seurat_clusters" %in% colnames(seu@meta.data)) {
+  Idents(seu) <- "seurat_clusters"
+} else {
+  stop("seurat_clusters not found in metadata — run 02_visualize.R first.")
+}
+
 # Compute per-cluster mean for stem and exhaustion markers.
 cluster_ids <- levels(Idents(seu))
 mean_stem <- sapply(cluster_ids, function(cl) {
@@ -95,29 +103,27 @@ cat("Using reduction:", umap_key, "\n")
 
 sce <- as.SingleCellExperiment(seu)
 
-# Slingshot needs the reduction under a consistent name.
-# as.SingleCellExperiment copies Seurat reductions to reducedDims().
+# Seurat v5's as.SingleCellExperiment() does not always transfer reductions.
+# Inject UMAP embeddings manually so Slingshot can find them.
 cat("reducedDims available in SCE:", paste(reducedDimNames(sce), collapse = ", "), "\n")
 
-# Map Seurat reduction name to SCE reducedDims name.
-# Seurat → SCE typically capitalises the name.
-sce_umap_name <- toupper(umap_key)
+sce_umap_name <- "UMAP"
 if (!sce_umap_name %in% reducedDimNames(sce)) {
-  # Try exact match first
-  candidates <- reducedDimNames(sce)[grepl("UMAP|umap", reducedDimNames(sce), ignore.case = TRUE)]
-  sce_umap_name <- if (length(candidates) > 0) candidates[1] else reducedDimNames(sce)[1]
-  cat("Mapped UMAP name to SCE reducedDim:", sce_umap_name, "\n")
+  umap_embed <- Embeddings(seu, reduction = umap_key)
+  reducedDim(sce, "UMAP") <- umap_embed
+  cat("UMAP manually injected into SCE reducedDims\n")
 }
+cat("Using reducedDim:", sce_umap_name, "\n")
 
 cat("\nRunning Slingshot...\n")
 set.seed(42)
 time_sling <- system.time({
   sds <- slingshot(
     data          = sce,
-    clusterLabels = colData(sce)$seurat_clusters,
+    clusterLabels = as.character(colData(sce)$seurat_clusters),
     reducedDim    = sce_umap_name,
-    start.clus    = root_cluster,   # root at stem-like memory cluster
-    approx_points = 150             # smooth the principal curve; 150 is fine for UMAP
+    start.clus    = as.character(root_cluster),
+    approx_points = 150
   )
 })
 cat("Slingshot run time:\n"); print(time_sling)

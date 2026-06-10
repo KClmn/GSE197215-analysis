@@ -132,12 +132,13 @@ if (!dir.exists(plot_dir)) dir.create(plot_dir, recursive = TRUE)
 
 # TIL type colour scheme following ProjecTILs convention.
 til_cols <- c(
-  "Tex"   = "#d62728",   # terminally exhausted
-  "Tpex"  = "#ff7f0e",   # progenitor-exhausted
-  "Tem"   = "#2ca02c",   # effector-memory
-  "Teff"  = "#1f77b4",   # effector
-  "Tn"    = "#9467bd",   # naive
-  "Tcm"   = "#8c564b"    # central-memory
+  "CD8.TEX"      = "#d62728",   # terminally exhausted
+  "CD8.TPEX"     = "#ff7f0e",   # progenitor-exhausted
+  "CD8.EM"       = "#2ca02c",   # effector-memory
+  "CD8.CM"       = "#1f77b4",   # central-memory
+  "CD8.NaiveLike"= "#9467bd",   # naive-like
+  "CD8.TEMRA"    = "#8c564b",   # terminally differentiated effector
+  "CD8.MAIT"     = "#e377c2"    # mucosal-associated invariant T
 )
 
 p_til <- DimPlot(
@@ -199,7 +200,7 @@ p_comp <- ggplot(comp_df, aes(x = patient_id, y = proportion, fill = TIL_type)) 
   facet_grid(~ response, scales = "free_x", space = "free_x") +
   labs(
     title    = "TIL subtype composition per patient (CD8 reference, filter.cells=FALSE)",
-    subtitle = "CD4 cells assigned to nearest CD8 state — interpret sort_frac==CD8 subset only",
+    subtitle = "CD4 cells assigned to nearest CD8 state - interpret sort_frac==CD8 subset only",
     x        = NULL, y = "Proportion"
   ) +
   theme_classic(base_size = 11) +
