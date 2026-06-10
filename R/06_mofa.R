@@ -97,6 +97,17 @@ mofa_views <- list(RNA = as.matrix(rna_mat), ADT = as.matrix(adt_mat))
 mofa_available <- requireNamespace("MOFA2", quietly = TRUE)
 
 if (mofa_available) {
+  # Point reticulate at OSCAR's system Python (which has OpenSSL and mofapy2).
+  # basilisk fails on OSCAR because pyenv can't compile Python without OpenSSL headers.
+  # Run in terminal first:
+  #   module load python && pip install --user mofapy2
+  # Then set MOFA2_PYTHON to the output of `which python3`.
+  py_bin <- Sys.getenv("MOFA2_PYTHON", unset = "")
+  if (nzchar(py_bin)) {
+    reticulate::use_python(py_bin, required = TRUE)
+    cat("Using Python:", py_bin, "\n")
+  }
+
   library(MOFA2)
 
   cat("\nRunning MOFA2...\n")
@@ -124,7 +135,8 @@ if (mofa_available) {
 
   hdf5_path <- "data/processed/06_mofa_model.hdf5"
   time_mofa <- system.time({
-    mofa_obj <- run_mofa(mofa_obj, outfile = hdf5_path, use_basilisk = TRUE)
+    use_bas  <- !nzchar(Sys.getenv("MOFA2_PYTHON", unset = ""))
+    mofa_obj <- run_mofa(mofa_obj, outfile = hdf5_path, use_basilisk = use_bas)
   })
   cat("MOFA2 run time:\n"); print(time_mofa)
 
