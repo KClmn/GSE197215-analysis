@@ -134,11 +134,16 @@ if (mofa_available) {
   )
 
   hdf5_path <- "data/processed/06_mofa_model.hdf5"
-  time_mofa <- system.time({
-    use_bas  <- !nzchar(Sys.getenv("MOFA2_PYTHON", unset = ""))
-    mofa_obj <- run_mofa(mofa_obj, outfile = hdf5_path, use_basilisk = use_bas)
-  })
-  cat("MOFA2 run time:\n"); print(time_mofa)
+  if (file.exists(hdf5_path)) {
+    cat("Loading existing MOFA2 model from", hdf5_path, "\n")
+    mofa_obj <- load_model(hdf5_path)
+  } else {
+    time_mofa <- system.time({
+      use_bas  <- !nzchar(Sys.getenv("MOFA2_PYTHON", unset = ""))
+      mofa_obj <- run_mofa(mofa_obj, outfile = hdf5_path, use_basilisk = use_bas)
+    })
+    cat("MOFA2 run time:\n"); print(time_mofa)
+  }
 
   # Extract factor values (cells × factors)
   factor_mat <- get_factors(mofa_obj, factors = "all")[[1]]
@@ -216,7 +221,7 @@ if (mofa_available) {
   # CHOICE: threshold = 0.3 for |r|.  Any factor whose maximum |r| across all
   # known variables is < 0.3 is flagged as unexplained.
   max_r      <- apply(cor_mat, 1, max, na.rm = TRUE)
-  total_var  <- rowSums(var_exp$r2_per_factor, na.rm = TRUE)
+  total_var  <- rowSums(var_exp$r2_per_factor[[1]], na.rm = TRUE)
   mystery_df <- data.frame(
     factor    = rownames(cor_mat),
     max_corr  = round(max_r, 3),
