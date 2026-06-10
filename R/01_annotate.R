@@ -56,14 +56,14 @@ if (any(grepl("^h-", rna_genes))) {
   cat("Stripping 'h-' prefix from", sum(grepl("^h-", rna_genes)), "RNA genes\n")
 
   rna_counts <- GetAssayData(seu, assay = "RNA", layer = "counts")
-  rna_data   <- GetAssayData(seu, assay = "RNA", layer = "data")
   rownames(rna_counts) <- sub("^h-", "", rownames(rna_counts))
-  rownames(rna_data)   <- sub("^h-", "", rownames(rna_data))
+  seu[["RNA"]] <- CreateAssayObject(counts = rna_counts)
+  rm(rna_counts)
 
-  seu[["RNA"]] <- CreateAssayObject(counts = rna_counts, data = rna_data)
+  # Re-normalise to rebuild the data layer with the renamed features.
+  seu <- NormalizeData(seu, assay = "RNA", verbose = FALSE)
   cat("Example gene names after stripping:",
       paste(head(rownames(seu[["RNA"]]), 5), collapse = ", "), "\n")
-  rm(rna_counts, rna_data)
 } else {
   cat("No 'h-' prefix found — gene names already clean\n")
 }
