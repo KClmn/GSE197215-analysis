@@ -67,7 +67,18 @@ print(table(ref_cd8$functional.cluster))
 
 cat("\nRunning ProjecTILs classifier...\n")
 time_proj <- system.time({
-    # filter.cells = FALSE: scGate's level-1 gate is tuned for ex vivo TILs and
+    # Both misc$species slots are NULL — ProjecTILs inverts the ortholog
+  # conversion direction when it detects a human reference and NULL query
+  # species, then fails to find human gene symbols in the Gene.MM (mouse)
+  # column. Setting both to "Homo sapiens" bypasses the conversion entirely.
+  # ProjecTILs reads misc$projecTILs to detect reference species. When it finds
+  # "Human" in the reference string and the query has no matching key, it assumes
+  # query = mouse and inverts ortholog conversion (Gene.HS -> Gene.MM), which
+  # fails because human gene symbols don't appear in the mouse column.
+  # Setting the same key on the query tells it both are human, skipping conversion.
+  seu@misc[["projecTILs"]] <- "Human CD8 TILs"
+
+  # filter.cells = FALSE: scGate's level-1 gate is tuned for ex vivo TILs and
   # removes all in vitro-expanded CAR-T cells (different activation state +
   # CAR transgene expression). Projection still works without the gate.
   # Downstream: treat CD4 cell labels as "nearest CD8 neighbor" and weight
