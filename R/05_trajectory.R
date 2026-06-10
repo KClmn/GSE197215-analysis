@@ -56,12 +56,17 @@ cat("Stem marker genes found:", paste(present_stem, collapse = ", "), "\n")
 cat("Exhaustion marker genes found:", paste(present_exh, collapse = ", "), "\n")
 
 # Ensure Idents are seurat_clusters, not orig.ident.
-# Idents can revert to orig.ident across save/load cycles if not explicitly set.
-if ("seurat_clusters" %in% colnames(seu@meta.data)) {
-  Idents(seu) <- "seurat_clusters"
-} else {
-  stop("seurat_clusters not found in metadata — run 02_visualize.R first.")
+# Idents can revert to orig.ident across save/load cycles, and ProjecTILs
+# drops metadata columns when it returns a new object — re-cluster if needed.
+if (!"seurat_clusters" %in% colnames(seu@meta.data)) {
+  cat("seurat_clusters not found — re-running FindNeighbors + FindClusters\n")
+  clust_assay <- if ("integrated" %in% names(seu@assays)) "integrated" else "RNA"
+  DefaultAssay(seu) <- clust_assay
+  seu <- FindNeighbors(seu, reduction = "pca", dims = 1:30, verbose = FALSE)
+  seu <- FindClusters(seu, resolution = 0.5, verbose = FALSE)
+  cat("Clusters computed on assay:", clust_assay, "\n")
 }
+Idents(seu) <- "seurat_clusters"
 
 # Compute per-cluster mean for stem and exhaustion markers.
 cluster_ids <- levels(Idents(seu))

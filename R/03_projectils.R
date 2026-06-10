@@ -214,7 +214,22 @@ ggsave(file.path(plot_dir, "03_projectils_composition.pdf"), p_comp,
 message("Saved: results/plots/03_projectils_composition.pdf")
 
 # ===========================================================================
-# 6. Save
+# 6. Restore metadata columns dropped by ProjecTILs
+# ===========================================================================
+# ProjecTILs.classifier() returns a new Seurat object that may not carry all
+# original metadata columns (e.g. seurat_clusters, response, patient_id).
+# Re-attach any missing columns from the original query object.
+missing_cols <- setdiff(colnames(seu@meta.data), colnames(seu_proj@meta.data))
+if (length(missing_cols) > 0) {
+  cat("Restoring", length(missing_cols), "metadata columns dropped by ProjecTILs:",
+      paste(missing_cols, collapse = ", "), "\n")
+  shared_cells <- intersect(colnames(seu_proj), colnames(seu))
+  for (col in missing_cols)
+    seu_proj[[col]] <- seu@meta.data[shared_cells, col]
+}
+
+# ===========================================================================
+# 7. Save
 # ===========================================================================
 saveRDS(seu_proj, "data/processed/03_projectils.rds")
 message("Saved: data/processed/03_projectils.rds")
