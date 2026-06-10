@@ -204,6 +204,13 @@ if ("ADT_renorm" %in% names(seu@assays)) {
 # ===========================================================================
 # 8. Save
 # ===========================================================================
+# Seurat v5 stores expression data in per-sample layers. Join them into a
+# single matrix now so every downstream script can call GetAssayData() without
+# needing to know about v5 layer semantics.
+DefaultAssay(seu) <- "RNA"
+seu <- JoinLayers(seu)
+cat("RNA layers joined:", paste(Layers(seu), collapse = ", "), "\n")
+
 dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
 out_path <- "data/processed/01_annotated.rds"
 saveRDS(seu, out_path)
