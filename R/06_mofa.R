@@ -111,10 +111,9 @@ if (mofa_available) {
   model_opts$num_factors <- 15L
 
   train_opts <- get_default_training_options(mofa_obj)
-  train_opts$seed          <- 42L
-  train_opts$maxiter       <- 1000L
-  train_opts$convergence_mode <- "medium"   # tighter than "fast", looser than "slow"
-  train_opts$save_parameters  <- FALSE
+  train_opts$seed             <- 42L
+  train_opts$maxiter          <- 1000L
+  train_opts$convergence_mode <- "medium"
 
   mofa_obj <- prepare_mofa(
     mofa_obj,
