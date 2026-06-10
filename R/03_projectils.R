@@ -71,13 +71,14 @@ time_proj <- system.time({
   # conversion direction when it detects a human reference and NULL query
   # species, then fails to find human gene symbols in the Gene.MM (mouse)
   # column. Setting both to "Homo sapiens" bypasses the conversion entirely.
-  # Seurat v5 stores RNA data in per-sample layers; GetAssayData() returns an
-  # empty matrix until layers are joined. ProjecTILs then sees ~0 genes,
-  # triggers the ortholog conversion, and crashes. JoinLayers() collapses all
-  # sample layers into a single matrix that older tools can read correctly.
-  DefaultAssay(seu) <- "RNA"
-  seu <- JoinLayers(seu)
-  cat("RNA layers joined:", paste(Layers(seu), collapse = ", "), "\n")
+  # Diagnostic: confirm ProjecTILs can see the RNA data before the 8-min run.
+  rna_mat <- GetAssayData(seu, assay = "RNA", slot = "data")
+  cat("RNA data slot —", nrow(rna_mat), "genes x", ncol(rna_mat), "cells\n")
+  cat("Gene name examples:", paste(head(rownames(rna_mat), 6), collapse = ", "), "\n")
+  cat("Non-zero entries:", sum(rna_mat != 0), "\n")
+  if (nrow(rna_mat) < 100 || sum(rna_mat != 0) == 0)
+    stop("RNA data slot appears empty — check assay structure before running ProjecTILs.")
+  rm(rna_mat)
 
   # ProjecTILs reads misc$projecTILs to detect reference species. When it finds
   # "Human" in the reference string and the query has no matching key, it assumes
