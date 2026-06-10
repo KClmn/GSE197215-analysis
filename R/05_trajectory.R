@@ -65,6 +65,7 @@ if (!"seurat_clusters" %in% colnames(seu@meta.data)) {
   seu <- FindNeighbors(seu, reduction = "pca", dims = 1:30, verbose = FALSE)
   seu <- FindClusters(seu, resolution = 0.5, verbose = FALSE)
   cat("Clusters computed on assay:", clust_assay, "\n")
+  DefaultAssay(seu) <- "RNA"   # restore so downstream GetAssayData hits RNA, not integrated
 }
 Idents(seu) <- "seurat_clusters"
 
